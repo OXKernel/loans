@@ -13,8 +13,8 @@ def read_item(first_name: Union[str, None] = None, last_name: Union[str, None] =
     return {"first_name": first_name, "last_name": last_name, "user_id": user_id}
 
 @app.get("/create/loan")
-def read_item(principal: Union[str, None] = None, duration_months: Union[str, None] = None, user_id: Union[str, None] = None):
-    return {"principal": principal, "duration": duration_months, "user_id": user_id}
+def read_item(principal: Union[str, None] = None, loan_term_months: Union[str, None] = None, user_id: Union[str, None] = None):
+    return {"principal": principal, "duration": loan_term_months, "user_id": user_id}
 
 @app.get("/fetch/loan_sched")
 def read_item(user_id: Union[str, None] = None):

@@ -4,7 +4,7 @@
 #
 curl "http://127.0.0.1:8000/create/user?first_name=old&last_name=dog&user_id=123"
 printf "\n";
-curl "http://127.0.0.1:8000/create/loan?principal=100&duration_months=10&user_id=123"
+curl "http://127.0.0.1:8000/create/loan?principal=100&loan_term_months=10&user_id=123"
 printf "\n";
 curl "http://127.0.0.1:8000/fetch/loan_sched?user_id=123"
 printf "\n";
@@ -13,4 +13,4 @@ printf "\n";
 curl "http://127.0.0.1:8000/fetch/all_loans?user_id=123"
 printf "\n";
 curl "http://127.0.0.1:8000/share/abc?user_id=123"
-
+printf "\n";
