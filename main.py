@@ -25,6 +25,7 @@ class SQLInit:
             (LOAN_ID    INTEGER NOT NULL,
              ID         INTEGER NOT NULL,
              SHARED_ID  INTEGER NOT NULL,
+             FOREIGN KEY(LOAN_ID)   REFERENCES LOANS(LOAN_ID),
              FOREIGN KEY(ID)        REFERENCES USERS(ID),
              FOREIGN KEY(SHARED_ID) REFERENCES USERS(ID)
              );''')
