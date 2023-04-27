@@ -46,7 +46,7 @@ class LoanIQ:
 
   @classmethod
   def compute_amortization_schedule(self, principal:float, term:int, interest:float, payment:float):
-    index = 1
+    month = 1
     interest = interest / 100
     sched = []
     # principal must go to 0 after all terms are computed 
@@ -61,8 +61,8 @@ class LoanIQ:
       else:
         paid_principal = payment_less_interest
       principal = principal - paid_principal
-      sched.append({"term": index, "interest_in_term": interest_in_term, "paid_principal": paid_principal, "balance": principal})
-      index = index + 1
+      sched.append({"month": month, "balance": principal, "monthly_payment": payment})
+      month += 1
     return sched
 
   @classmethod
@@ -106,6 +106,7 @@ class Utility:
          interest = float(row[2])
          break
     except:
+      conn.close()
       return None, None, None
     conn.close()
     return principal, term_in_months, interest
@@ -138,6 +139,7 @@ def read_item(first_name: Union[str, None] = None, last_name: Union[str, None] =
         VALUES (?, ?, ?)", (user_id, first_name, last_name))
       conn.commit()
     except:
+      conn.close()
       return {"exception": "error in /create/user", "first_name": first_name, "last_name": last_name, "user_id": user_id}
     conn.close()
     return {"first_name": first_name, "last_name": last_name, "user_id": user_id}
@@ -151,6 +153,7 @@ def read_item(principal: Union[str, None] = None, loan_term_months: Union[str, N
         VALUES (?, ?, ?, ?, ?)", (user_id, float(principal), int(loan_term_months), float(interest), description))
       conn.commit()
     except:
+      conn.close()
       return {"exception": "error in /create/loan", "principal": principal, "term": loan_term_months, "user_id": user_id, "interest": interest, "description": description}
     conn.close()
     return {"principal": principal, "term": loan_term_months, "user_id": user_id, "interest": interest, "description": description}
@@ -166,6 +169,7 @@ def read_item(user_id: Union[str, None] = None, description: Union[str, None] = 
          loan_id = int(row[0])
          break
     except:
+      conn.close()
       return {"exception": "error in /get/loan_id", "user_id": user_id, "description": description}
     conn.close()
     return {"loan_id": loan_id}
@@ -179,7 +183,7 @@ def read_item(user_id: Union[str, None] = None, loan_id: Union[str, None] = None
     return {"exception": "/fetch/loan_sched couldn't retrive user loan", "user_id": user_id, "loan_id": loan_id}
    payment = liq.compute_payment(principal, term_in_months, interest)
    sched = liq.compute_amortization_schedule(principal, term_in_months, interest, payment)
-   return {"amortization schedule": sched}
+   return {"amortization_schedule": sched}
 
 @app.get("/fetch/loan_summary")
 def read_item(user_id: Union[str, None] = None, loan_id: Union[str, None] = None, month: Union[str, None] = None):
@@ -194,7 +198,7 @@ def read_item(user_id: Union[str, None] = None, loan_id: Union[str, None] = None
     return {"exception": "fetch/loan_summary couldn't retrive user loan", "user_id": user_id, "loan_id": loan_id}
    payment = liq.compute_payment(principal, term_in_months, interest)
    current_balance, aggregate_principal, aggregate_interest = liq.compute_amortization_summary(principal, term_in_months, interest, payment, int(month))
-   return {"current_balance": current_balance, "aggregate principal": aggregate_principal, "aggregate interest": aggregate_interest}
+   return {"current_balance": current_balance, "aggregate_principal": aggregate_principal, "aggregate_interest": aggregate_interest}
 
 @app.get("/fetch/all_loans")
 def read_item(user_id: Union[str, None] = None):
@@ -206,6 +210,7 @@ def read_item(user_id: Union[str, None] = None):
       for row in cursor:
          loans.append({"loan_id":row[0],"id":row[1],"principal":row[2],"term_in_months":row[3],"interest":row[4],"description":row[5]})
     except:
+      conn.close()
       return {"exception": "error in /fetch/all_loans", "user_id": user_id}
     conn.close()
     return {"loans": loans}
@@ -218,6 +223,7 @@ def read_item(loan_id: str, user_id: Union[str, None] = None, shared_id: Union[s
         VALUES ({loan_idf}, {idf}, {sidf})".format(loan_idf=loan_id, idf=user_id, sidf=shared_id))
       conn.commit()
     except:
+      conn.close()
       return {"exception": "error in /share", "loan_id": loan_id, "user_id": user_id, "shared_id": shared_id}
     conn.close()
     return {"loan_id": loan_id, "user_id": user_id, "shared_id": shared_id}
