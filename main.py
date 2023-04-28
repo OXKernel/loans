@@ -1,7 +1,15 @@
+import logging
 import sys
 import sqlite3
 from typing import Union
 from fastapi import FastAPI
+
+# Init logging
+# setup loggers
+logging.config.fileConfig('log.conf', disable_existing_loggers=False)
+
+# get root logger
+logger = logging.getLogger(__name__)
 
 class SQLInit:
   conn = sqlite3.connect('loans.db')
@@ -40,7 +48,6 @@ class LoanIQ:
   def compute_payment(self, principal:float, term:int, interest:float):
     interest = interest / 100
     rate = interest / 12
-    print("interest: ", interest, " term: ", term, " principal: ", principal, " rate: ", rate)
     payment = (principal * pow(rate + 1, term) * rate) / (pow(rate + 1, term) - 1)
     return payment
 
@@ -61,7 +68,7 @@ class LoanIQ:
       else:
         paid_principal = payment_less_interest
       principal = principal - paid_principal
-      sched.append({"month": month, "balance": principal, "monthly_payment": payment})
+      sched.append({"month": month, "balance": principal, "monthly_payment": payment, "interest_in_term": interest_in_term, "paid_principal": paid_principal})
       month += 1
     return sched
 
@@ -105,7 +112,8 @@ class Utility:
          term_in_months = int(row[1])
          interest = float(row[2])
          break
-    except:
+    except sqlite3.Error as er:
+      logger.error('SQLite error: %s' % (' '.join(er.args)))
       conn.close()
       return None, None, None
     conn.close()
@@ -114,6 +122,8 @@ class Utility:
 ########
 # MAIN #
 ########
+
+logger.info("Loan App Starting...")
 
 # Init SQL
 SQLInit()
@@ -138,7 +148,8 @@ def read_item(first_name: Union[str, None] = None, last_name: Union[str, None] =
       conn.execute("INSERT INTO USERS (ID, FIRST_NAME, LAST_NAME) \
         VALUES (?, ?, ?)", (user_id, first_name, last_name))
       conn.commit()
-    except:
+    except sqlite3.Error as er:
+      logger.error('SQLite error: %s' % (' '.join(er.args)))
       conn.close()
       return {"exception": "error in /create/user", "first_name": first_name, "last_name": last_name, "user_id": user_id}
     conn.close()
@@ -152,7 +163,8 @@ def read_item(principal: Union[str, None] = None, loan_term_months: Union[str, N
       conn.execute("INSERT INTO LOANS (ID, PRINCIPAL, TERM_IN_MONTHS, INTEREST, DESCRIPTION) \
         VALUES (?, ?, ?, ?, ?)", (user_id, float(principal), int(loan_term_months), float(interest), description))
       conn.commit()
-    except:
+    except sqlite3.Error as er:
+      logger.error('SQLite error: %s' % (' '.join(er.args)))
       conn.close()
       return {"exception": "error in /create/loan", "principal": principal, "term": loan_term_months, "user_id": user_id, "interest": interest, "description": description}
     conn.close()
@@ -168,7 +180,8 @@ def read_item(user_id: Union[str, None] = None, description: Union[str, None] = 
       for row in cursor:
          loan_id = int(row[0])
          break
-    except:
+    except sqlite3.Error as er:
+      logger.error('SQLite error: %s' % (' '.join(er.args)))
       conn.close()
       return {"exception": "error in /get/loan_id", "user_id": user_id, "description": description}
     conn.close()
@@ -209,7 +222,8 @@ def read_item(user_id: Union[str, None] = None):
       cursor = conn.execute("SELECT LOAN_ID, ID, PRINCIPAL, TERM_IN_MONTHS, INTEREST, DESCRIPTION FROM LOANS WHERE ID={idf}".format(idf=user_id))
       for row in cursor:
          loans.append({"loan_id":row[0],"id":row[1],"principal":row[2],"term_in_months":row[3],"interest":row[4],"description":row[5]})
-    except:
+    except sqlite3.Error as er:
+      logger.error('SQLite error: %s' % (' '.join(er.args)))
       conn.close()
       return {"exception": "error in /fetch/all_loans", "user_id": user_id}
     conn.close()
@@ -222,7 +236,8 @@ def read_item(loan_id: str, user_id: Union[str, None] = None, shared_id: Union[s
       conn.execute("INSERT INTO SHARED_LOANS (LOAN_ID, ID, SHARED_ID) \
         VALUES ({loan_idf}, {idf}, {sidf})".format(loan_idf=loan_id, idf=user_id, sidf=shared_id))
       conn.commit()
-    except:
+    except sqlite3.Error as er:
+      logger.error('SQLite error: %s' % (' '.join(er.args)))
       conn.close()
       return {"exception": "error in /share", "loan_id": loan_id, "user_id": user_id, "shared_id": shared_id}
     conn.close()
